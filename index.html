@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seed Sprouter: Pro Farmer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+        #game {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .stat-card { background: #fff9c4; padding: 10px 20px; border-radius: 10px; border: 2px solid #fbc02d; }
+        
+        .main-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 15px; }
+        .box { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 2px solid #ccc;
+            text-align: left;
+        }
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .seed-btn {
+            background: #fff;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-weight: bold;
+        }
+        .seed-btn:hover:not(:disabled) { background: #e8f5e9; }
+        .seed-btn:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+        .seed-btn.active { background: #4CAF50; color: white; }
+
+        #garden {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            background: #795548;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .plot {
+            background: #8d6e63;
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            border: 2px solid #6d4c41;
+            transition: 0.1s;
+        }
+        .plot:hover { background: #a1887f; }
+        .plot.ready { background: #4caf50; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        textarea { width: 90%; font-size: 10px; height: 40px; margin-top: 5px; resize: none; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+        .mini-btn { font-size: 11px; padding: 5px; cursor: pointer; border-radius: 4px; border: 1px solid #999; }
+        
+        .reset-btn {
+            background: #ff5252;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game">
+    <div class="header">
+        <h1>🌻 Seed Sprouter 🌻</h1>
+        <div class="stat-card">
+            <strong>Munz: 💰<span id="munz">50</span></strong>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="box">
+                <h3 style="margin:0 0 10px 0">Seed Shop</h3>
+                <div id="shop-list"></div>
+            </div>
+
+            <div class="box">
+                <h3 style="margin:0 0 10px 0">Seed Bag</h3>
+                <div id="inventory-list"></div>
+                <hr>
+                <small>Hold: <strong id="selected-txt">None</strong></small>
+            </div>
+
+            <div class="box">
+                <h3 style="margin:0 0 10px 0">Cloud Save</h3>
+                <textarea id="saveCode" placeholder="Paste code here..."></textarea>
+                <div class="btn-group">
+                    <button class="mini-btn" onclick="exportSave()">Copy</button>
+                    <button class="mini-btn" onclick="importSave()">Import</button>
+                </div>
+            </div>
+            
+            <button class="reset-btn" onclick="resetGame()">Reset Game</button>
+        </div>
+
+        <div id="garden"></div>
+    </div>
+</div>
+
+<script>
+    // 1. Setup Data
+    let state = {
+        munz: 50,
+        selectedSeed: null,
+        inventory: { Basil: 0, Carrot: 0, Sunflower: 0 },
+        plots: Array(25).fill(null)
+    };
+
+    const cropData = {
+        Basil:     { symbol: "🌿", price: 5,  time: 3000,  sell: 12 },
+        Carrot:    { symbol: "🥕", price: 15, time: 8000,  sell: 45 },
+        Sunflower: { symbol: "🌻", price: 50, time: 15000, sell: 160 }
+    };
+
+    // 2. Save/Load Logic
+    function saveGame() {
+        localStorage.setItem('farmSaveData', JSON.stringify(state));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('farmSaveData');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                state = Object.assign(state, parsed);
+            } catch(e) { console.error("Load failed", e); }
+        }
+    }
+
+    function exportSave() {
+        const code = btoa(JSON.stringify(state));
+        const area = document.getElementById('saveCode');
+        area.value = code;
+        area.select();
+        document.execCommand('copy');
+        alert("Code copied!");
+    }
+
+    function importSave() {
+        const code = document.getElementById('saveCode').value.trim();
+        if (!code) return;
+        try {
+            const decoded = JSON.parse(atob(code));
+            state = decoded;
+            saveGame();
+            location.reload();
+        } catch (e) {
+            alert("Invalid Save Code!");
+        }
+    }
+
+    function resetGame() {
+        if(confirm("Delete everything?")) {
+            localStorage.removeItem('farmSaveData');
+            location.reload();
+        }
+    }
+
+    // 3. Gameplay Logic
+    function buySeed(type) {
+        if (state.munz >= cropData[type].price) {
+            state.munz -= cropData[type].price;
+            state.inventory[type]++;
+            refreshUI();
+            saveGame();
+        }
+    }
+
+    function selectSeed(type) {
+        state.selectedSeed = type;
+        refreshUI();
+    }
+
+    function handlePlot(i) {
+        const p = state.plots[i];
+        if (p && p.ready) { // Harvest
+            state.munz += p.sell;
+            state.plots[i] = null;
+        } else if (!p && state.selectedSeed && state.inventory[state.selectedSeed] > 0) { // Plant
+            state.inventory[state.selectedSeed]--;
+            state.plots[i] = { 
+                ...cropData[state.selectedSeed], 
+                start: Date.now(), 
+                ready: false 
+            };
+            if (state.inventory[state.selectedSeed] === 0) state.selectedSeed = null;
+        }
+        refreshUI();
+        saveGame();
+    }
+
+    function refreshUI() {
+        document.getElementById('munz').textContent = Math.floor(state.munz);
+        document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
+
+        // Shop
+        for (let key in cropData) {
+            const btn = document.getElementById(`buy-${key}`);
+            if (btn) btn.disabled = state.munz < cropData[key].price;
+        }
+
+        // Inventory
+        const invEl = document.getElementById('inventory-list');
+        invEl.innerHTML = '';
+        let hasSeeds = false;
+        for (let key in state.inventory) {
+            const count = state.inventory[key];
+            if (count > 0) {
+                hasSeeds = true;
+                const active = state.selectedSeed === key ? 'active' : '';
+                invEl.innerHTML += `
+                    <div class="shop-item">
+                        <span>${cropData[key].symbol} x${count}</span>
+                        <button class="seed-btn ${active}" onclick="selectSeed('${key}')">Hold</button>
+                    </div>`;
+            }
+        }
+        if(!hasSeeds) invEl.innerHTML = '<small color="#888">Empty Bag</small>';
+
+        // Garden
+        state.plots.forEach((p, i) => {
+            const el = document.getElementById(`p-${i}`);
+            if (!p) {
+                el.textContent = '';
+                el.className = 'plot';
+            } else {
+                const age = Date.now() - p.start;
+                if (age >= p.time) {
+                    p.ready = true;
+                    el.textContent = p.symbol;
+                    el.className = 'plot ready';
+                } else {
+                    el.textContent = '🌱';
+                    el.className = 'plot';
+                }
+            }
+        });
+    }
+
+    // 4. Initialize
+    function init() {
+        loadGame();
+        
+        const shopEl = document.getElementById('shop-list');
+        for (let key in cropData) {
+            shopEl.innerHTML += `
+                <div class="shop-item">
+                    <span>${cropData[key].symbol} ${key}</span>
+                    <button id="buy-${key}" class="seed-btn" onclick="buySeed('${key}')">💰${cropData[key].price}</button>
+                </div>`;
+        }
+
+        const grid = document.getElementById('garden');
+        for(let i=0; i<25; i++) {
+            const el = document.createElement('div');
+            el.className = 'plot';
+            el.id = `p-${i}`;
+            el.onclick = () => handlePlot(i);
+            grid.appendChild(el);
+        }
+        
+        refreshUI();
+        setInterval(refreshUI, 200);
+    }
+
+    init();
+</script>
+
+</body>
+</html>
