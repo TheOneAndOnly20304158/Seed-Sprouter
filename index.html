@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Global Leaderboard</title>
+    <title>Seed Sprouter Pro - Classic Sync</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -16,7 +16,7 @@
         body.raining { background: linear-gradient(to bottom, #4682B4, #708090); }
         
         #game {
-            max-width: 1300px;
+            max-width: 1200px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
@@ -29,16 +29,14 @@
         .header { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 2px solid #eee; }
         .stat-card { background: #fff9c4; padding: 10px 20px; border-radius: 10px; border: 2px solid #fbc02d; font-size: 1.2em; }
         
+        #weather-box { background: #e3f2fd; padding: 10px; border-radius: 10px; border: 2px solid #2196f3; margin-bottom: 15px; font-weight: bold; }
+        .rain-alert { color: #0d47a1; animation: flash 1s infinite; }
+        @keyframes flash { 50% { opacity: 0.5; } }
+
         .column { display: flex; flex-direction: column; gap: 15px; }
         .box { background: white; padding: 15px; border-radius: 12px; border: 2px solid #ccc; text-align: left; }
         .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 5px 0; border-bottom: 1px solid #eee; }
         
-        /* Leaderboard Styling */
-        .leaderboard-table { width: 100%; font-size: 0.9em; border-collapse: collapse; }
-        .leaderboard-table tr { border-bottom: 1px solid #eee; }
-        .leaderboard-table td { padding: 5px 2px; }
-        .you-row { background: #e3f2fd; font-weight: bold; color: #1976d2; }
-
         .seed-btn { background: #fff; border: 2px solid #4CAF50; border-radius: 5px; cursor: pointer; padding: 6px 10px; font-weight: bold; font-size: 13px; transition: 0.2s; }
         .seed-btn:hover:not(:disabled) { background: #e8f5e9; transform: translateY(-1px); }
         .seed-btn.active { background: #4CAF50; color: white; }
@@ -57,15 +55,13 @@
 <div id="game">
     <div class="header">
         <h1>🌻 Seed Sprouter Pro 🌻</h1>
-        <div class="stat-card">Net Worth: 💰<span id="net-worth">0</span></div>
-        <div class="stat-card">Munz: 💰<span id="munz">100</span></div>
+        <div class="stat-card"><strong>Munz: 💰<span id="munz">100</span></strong></div>
     </div>
 
     <div class="column">
-        <div class="box" style="background: #fff9c4; border-color: #fbc02d;">
-            <h3 style="margin:0 0 10px 0">🏆 Global Leaderboard</h3>
-            <table class="leaderboard-table" id="leaderboard-body"></table>
-            <center><small id="user-rank">Your Rank: Calculating...</small></center>
+        <div id="weather-box">
+            Weather: <span id="weather-status">☀️ Sunny</span><br>
+            <small id="weather-timer">Next change in: --:--</small>
         </div>
         
         <div class="box">
@@ -73,17 +69,17 @@
             <div class="timer-text">Restock in: <span id="restock-timer">--</span>s</div>
             <div id="shop-list"></div>
         </div>
+
+        <div class="box" style="background: #e8f5e9;">
+            <h3 style="margin:0 0 10px 0">🎒 Seed Bag</h3>
+            <div id="inventory-list"></div>
+            <hr><small>Holding: <strong id="selected-txt">None</strong></small>
+        </div>
     </div>
 
     <div id="garden"></div>
 
     <div class="column">
-        <div class="box" style="background: #e8f5e9;">
-            <h3 style="margin:0 0 10px 0">🎒 Seed Bag</h3>
-            <div id="inventory-list"></div>
-            <small>Holding: <strong id="selected-txt">None</strong></small>
-        </div>
-
         <div class="box" style="background: #fff3e0; border-color: #ff9800;">
             <h3 style="margin:0 0 10px 0">🧺 The Barn</h3>
             <div id="barn-list"></div>
@@ -91,7 +87,12 @@
         </div>
 
         <div class="box">
-            <h3 style="margin:0 0 5px 0">Data</h3>
+            <h3 style="margin:0 0 10px 0">Global Chat</h3>
+            <iframe src="https://www3.cbox.ws/box/?boxid=3553708&boxtag=vUIUmT" width="100%" height="250" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>
+        </div>
+
+        <div class="box">
+            <h3 style="margin:0 0 5px 0">Save Data</h3>
             <textarea id="saveCode" placeholder="Save code..."></textarea>
             <button class="seed-btn" style="width:100%; margin-top:5px;" onclick="exportSave()">Export</button>
             <button class="seed-btn" style="width:100%; margin-top:5px;" onclick="importSave()">Import</button>
@@ -119,42 +120,6 @@
         Sunflower: { symbol: "🌻", price: 200, time: 120000, sell: 500 }
     };
 
-    // --- LEADERBOARD LOGIC ---
-    function updateLeaderboard() {
-        // Calculate your net worth
-        let worth = state.munz;
-        for(let k in state.inventory) worth += (state.inventory[k] * cropData[k].price);
-        for(let k in state.barn) worth += (state.barn[k] * cropData[k].sell);
-        worth = Math.floor(worth);
-        document.getElementById('net-worth').textContent = worth;
-
-        // "Global" NPC Rivals that scale with time
-        const hour = new Date().getHours();
-        let rivals = [
-            { name: "Farmer Joe", worth: 5000 + (hour * 200) },
-            { name: "SprootMaster", worth: 2500 + (hour * 150) },
-            { name: "Sunny_Deere", worth: 1200 + (hour * 100) },
-            { name: "Old MacDonald", worth: 800 + (hour * 50) },
-            { name: "Newbie99", worth: 50 }
-        ];
-
-        rivals.push({ name: "YOU", worth: worth, isPlayer: true });
-        rivals.sort((a, b) => b.worth - a.worth);
-
-        const lbBody = document.getElementById('leaderboard-body');
-        lbBody.innerHTML = '';
-        rivals.forEach((r, index) => {
-            const rowClass = r.isPlayer ? 'class="you-row"' : '';
-            lbBody.innerHTML += `<tr ${rowClass}>
-                <td>#${index + 1}</td>
-                <td>${r.name}</td>
-                <td>💰${r.worth}</td>
-            </tr>`;
-            if(r.isPlayer) document.getElementById('user-rank').textContent = `Global Rank: #${index + 1}`;
-        });
-    }
-
-    // --- GLOBAL SYNC LOGIC (WEATHER & SHOP) ---
     function seededRandom(seed) {
         let x = Math.sin(seed++) * 10000;
         return x - Math.floor(x);
@@ -162,24 +127,82 @@
 
     function updateGlobalShop() {
         const now = new Date();
-        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${minutes}`;
+
         if (state.currentShopID !== shopID) {
             state.currentShopID = shopID;
             state.shopInventory = {};
-            let seed = 0; for(let i=0; i<shopID.length; i++) seed += shopID.charCodeAt(i);
-            const gen = (id, c, min, max) => { seed++; if (seededRandom(seed) < c) state.shopInventory[id] = Math.floor(seededRandom(seed+1)*(max-min+1))+min; };
-            gen("Basil", 1.0, 10, 25); gen("Wheat", 0.75, 8, 20); gen("Carrot", 0.80, 5, 15); gen("Tomato", 0.40, 4, 10); gen("Sunflower", 0.15, 1, 4);
+            let seed = 0;
+            for(let i=0; i<shopID.length; i++) seed += shopID.charCodeAt(i);
+
+            const generate = (id, chance, min, max) => {
+                seed++;
+                if (seededRandom(seed) < chance) {
+                    state.shopInventory[id] = Math.floor(seededRandom(seed + 1) * (max - min + 1)) + min;
+                }
+            };
+
+            generate("Basil", 1.0, 10, 25);
+            generate("Wheat", 0.75, 8, 20);
+            generate("Carrot", 0.80, 5, 15);
+            generate("Tomato", 0.40, 4, 10);
+            generate("Sunflower", 0.15, 1, 4);
             renderShop();
         }
-        document.getElementById('restock-timer').textContent = 59 - now.getSeconds();
+        document.getElementById('restock-timer').textContent = 59 - seconds;
     }
 
-    // --- GAMEPLAY CORE ---
+    function updateWeather() {
+        const now = new Date();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const rainActive = (minutes % 10 < 3);
+        state.isRaining = rainActive;
+
+        const statusEl = document.getElementById('weather-status');
+        const timerEl = document.getElementById('weather-timer');
+        
+        if (rainActive) {
+            document.body.classList.add('raining');
+            statusEl.innerHTML = "<span class='rain-alert'>🌧️ RAINING (3x Speed!)</span>";
+            timerEl.textContent = `Ends in: ${2 - (minutes % 10)}m ${59 - seconds}s`;
+        } else {
+            document.body.classList.remove('raining');
+            statusEl.textContent = "☀️ Sunny";
+            timerEl.textContent = `Rain in: ${9 - (minutes % 10)}m ${59 - seconds}s`;
+        }
+    }
+
+    function renderShop() {
+        const shopEl = document.getElementById('shop-list');
+        shopEl.innerHTML = '';
+        for (let key in state.shopInventory) {
+            const stock = state.shopInventory[key];
+            const isOut = stock <= 0;
+            shopEl.innerHTML += `<div class="item-row" style="${isOut ? 'opacity:0.5' : ''}">
+                <div><strong>${cropData[key].symbol} ${key}</strong><br><small>Stock: ${isOut ? 'OUT' : stock}</small></div>
+                <button class="seed-btn" onclick="buySeed('${key}')" ${isOut ? 'disabled' : ''}>💰${cropData[key].price}</button>
+            </div>`;
+        }
+    }
+
+    function buySeed(type) {
+        if (state.munz >= cropData[type].price && state.shopInventory[type] > 0) {
+            state.munz -= cropData[type].price;
+            state.inventory[type]++;
+            state.shopInventory[type]--;
+            renderShop(); refreshUI(); saveGame();
+        }
+    }
+
     function handlePlot(i) {
         const p = state.plots[i];
         if (p && p.progress >= 100) {
             const key = Object.keys(cropData).find(k => cropData[k].symbol === p.symbol);
-            state.barn[key]++; state.plots[i] = null;
+            state.barn[key]++;
+            state.plots[i] = null;
         } else if (!p && state.selectedSeed && state.inventory[state.selectedSeed] > 0) {
             state.inventory[state.selectedSeed]--;
             state.plots[i] = { ...cropData[state.selectedSeed], progress: 0 };
@@ -204,31 +227,34 @@
         const barnEl = document.getElementById('barn-list');
         barnEl.innerHTML = '';
         for (let key in state.barn) {
-            if (state.barn[key] > 0) barnEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.barn[key]}</span><button class="sell-btn" onclick="sellCrop('${key}')">Sell 1</button></div>`;
+            if (state.barn[key] > 0) {
+                barnEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.barn[key]}</span><button class="sell-btn" onclick="sellCrop('${key}')">Sell 1</button></div>`;
+            }
         }
 
         state.plots.forEach((p, i) => {
             const el = document.getElementById(`p-${i}`);
-            if (!p) { el.textContent = ''; el.style.background = "#8d6e63"; } 
+            if (!p) { el.textContent = ''; el.className = 'plot'; el.style.background = "#8d6e63"; } 
             else {
                 if (p.progress >= 100) { el.textContent = p.symbol; el.className = 'plot ready'; el.style.background = "#4caf50"; }
                 else { 
-                    el.textContent = '🌱'; el.style.background = `linear-gradient(to top, #4CAF50 ${p.progress}%, #8d6e63 ${p.progress}%)`;
+                    el.textContent = '🌱'; 
+                    el.className = 'plot';
+                    el.style.background = `linear-gradient(to top, #4CAF50 ${p.progress}%, #8d6e63 ${p.progress}%)`;
                 }
             }
         });
-        updateLeaderboard();
     }
 
-    // (Standard Helpers)
-    function buySeed(t) { if(state.munz >= cropData[t].price && state.shopInventory[t] > 0) { state.munz -= cropData[t].price; state.inventory[t]++; state.shopInventory[t]--; renderShop(); refreshUI(); saveGame(); } }
-    function renderShop() { const sEl = document.getElementById('shop-list'); sEl.innerHTML = ''; for(let k in state.shopInventory) sEl.innerHTML += `<div class="item-row"><div><strong>${cropData[k].symbol} ${k}</strong><br><small>Stock: ${state.shopInventory[k]}</small></div><button class="seed-btn" onclick="buySeed('${k}')">💰${cropData[k].price}</button></div>`; }
-    function sellCrop(t) { if(state.barn[t]>0) { state.munz += cropData[t].sell; state.barn[t]--; refreshUI(); saveGame(); } }
-    function sellAll() { for(let k in state.barn) { state.munz += (state.barn[k]*cropData[k].sell); state.barn[k]=0; } refreshUI(); saveGame(); }
-    function saveGame() { localStorage.setItem('sprouterLBSave', JSON.stringify(state)); }
-    function loadGame() { const s = localStorage.getItem('sprouterLBSave'); if(s) state = Object.assign(state, JSON.parse(s)); }
-    function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); }
-    function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e){ alert("Err"); } }
+    function sellCrop(type) { if (state.barn[type] > 0) { state.munz += cropData[type].sell; state.barn[type]--; refreshUI(); saveGame(); } }
+    function sellAll() { for (let key in state.barn) { state.munz += (state.barn[key] * cropData[key].sell); state.barn[key] = 0; } refreshUI(); saveGame(); }
+    function saveGame() { localStorage.setItem('sprouterClassicSave', JSON.stringify(state)); }
+    function loadGame() {
+        const saved = localStorage.getItem('sprouterClassicSave');
+        if (saved) state = Object.assign(state, JSON.parse(saved));
+    }
+    function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); alert("Exported!"); }
+    function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e) { alert("Invalid Code"); } }
 
     function init() {
         loadGame();
@@ -237,7 +263,17 @@
             const el = document.createElement('div'); el.className = 'plot'; el.id = `p-${i}`; el.onclick = () => handlePlot(i);
             grid.appendChild(el);
         }
-        setInterval(() => { updateGlobalShop(); updateLeaderboard(); state.plots.forEach(p => { if(p && p.progress < 100) p.progress += ( (new Date().getMinutes()%10<3?3:1) / (p.time/1000) ) * 100; }); refreshUI(); }, 1000);
+        setInterval(() => { 
+            updateWeather(); 
+            updateGlobalShop();
+            state.plots.forEach(p => {
+                if(p && p.progress < 100) {
+                    const speed = state.isRaining ? 3 : 1;
+                    p.progress += (speed / (p.time / 1000)) * 100;
+                }
+            });
+            refreshUI(); 
+        }, 1000);
     }
     init();
 </script>
