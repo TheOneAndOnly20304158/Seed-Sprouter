@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Classic Sync</title>
+    <title>Seed Sprouter Pro - Golden Hour Edition</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,6 +14,7 @@
             transition: background 2s;
         }
         body.raining { background: linear-gradient(to bottom, #4682B4, #708090); }
+        body.golden { background: linear-gradient(to bottom, #FFD700, #FF8C00); }
         
         #game {
             max-width: 1200px;
@@ -30,8 +31,8 @@
         .stat-card { background: #fff9c4; padding: 10px 20px; border-radius: 10px; border: 2px solid #fbc02d; font-size: 1.2em; }
         
         #weather-box { background: #e3f2fd; padding: 10px; border-radius: 10px; border: 2px solid #2196f3; margin-bottom: 15px; font-weight: bold; }
-        .rain-alert { color: #0d47a1; animation: flash 1s infinite; }
-        @keyframes flash { 50% { opacity: 0.5; } }
+        .golden-alert { color: #d84315; font-size: 1.2em; font-weight: bold; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
         .column { display: flex; flex-direction: column; gap: 15px; }
         .box { background: white; padding: 15px; border-radius: 12px; border: 2px solid #ccc; text-align: left; }
@@ -60,6 +61,7 @@
 
     <div class="column">
         <div id="weather-box">
+            <div id="golden-status"></div>
             Weather: <span id="weather-status">☀️ Sunny</span><br>
             <small id="weather-timer">Next change in: --:--</small>
         </div>
@@ -83,7 +85,7 @@
         <div class="box" style="background: #fff3e0; border-color: #ff9800;">
             <h3 style="margin:0 0 10px 0">🧺 The Barn</h3>
             <div id="barn-list"></div>
-            <button class="sell-btn" style="width:100%; margin-top:10px;" onclick="sellAll()">Sell All Crops</button>
+            <button class="sell-btn" style="width:100%; margin-top:10px;" id="sell-all-btn" onclick="sellAll()">Sell All Crops</button>
         </div>
 
         <div class="box">
@@ -109,7 +111,8 @@
         plots: Array(25).fill(null),
         shopInventory: {}, 
         currentShopID: "", 
-        isRaining: false
+        isRaining: false,
+        isGolden: false
     };
 
     const cropData = {
@@ -125,74 +128,67 @@
         return x - Math.floor(x);
     }
 
-    function updateGlobalShop() {
+    function updateGlobalEvents() {
         const now = new Date();
         const minutes = now.getMinutes();
         const seconds = now.getSeconds();
-        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${minutes}`;
 
+        // --- SHOP SYNC (1m) ---
+        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${minutes}`;
         if (state.currentShopID !== shopID) {
             state.currentShopID = shopID;
             state.shopInventory = {};
-            let seed = 0;
-            for(let i=0; i<shopID.length; i++) seed += shopID.charCodeAt(i);
-
-            const generate = (id, chance, min, max) => {
-                seed++;
-                if (seededRandom(seed) < chance) {
-                    state.shopInventory[id] = Math.floor(seededRandom(seed + 1) * (max - min + 1)) + min;
-                }
-            };
-
-            generate("Basil", 1.0, 10, 25);
-            generate("Wheat", 0.75, 8, 20);
-            generate("Carrot", 0.80, 5, 15);
-            generate("Tomato", 0.40, 4, 10);
-            generate("Sunflower", 0.15, 1, 4);
+            let seed = 0; for(let i=0; i<shopID.length; i++) seed += shopID.charCodeAt(i);
+            const gen = (id, c, min, max) => { seed++; if (seededRandom(seed) < c) state.shopInventory[id] = Math.floor(seededRandom(seed+1)*(max-min+1))+min; };
+            gen("Basil", 1.0, 10, 25); gen("Wheat", 0.75, 8, 20); gen("Carrot", 0.80, 5, 15); gen("Tomato", 0.40, 4, 10); gen("Sunflower", 0.15, 1, 4);
             renderShop();
         }
         document.getElementById('restock-timer').textContent = 59 - seconds;
-    }
 
-    function updateWeather() {
-        const now = new Date();
-        const minutes = now.getMinutes();
-        const seconds = now.getSeconds();
-        const rainActive = (minutes % 10 < 3);
-        state.isRaining = rainActive;
-
+        // --- WEATHER SYNC (3m Rain / 7m Sun) ---
+        state.isRaining = (minutes % 10 < 3);
         const statusEl = document.getElementById('weather-status');
         const timerEl = document.getElementById('weather-timer');
-        
-        if (rainActive) {
+        if (state.isRaining) {
             document.body.classList.add('raining');
-            statusEl.innerHTML = "<span class='rain-alert'>🌧️ RAINING (3x Speed!)</span>";
+            statusEl.innerHTML = "<span style='color:#0d47a1;'>🌧️ RAINING (3x Speed!)</span>";
             timerEl.textContent = `Ends in: ${2 - (minutes % 10)}m ${59 - seconds}s`;
         } else {
             document.body.classList.remove('raining');
             statusEl.textContent = "☀️ Sunny";
             timerEl.textContent = `Rain in: ${9 - (minutes % 10)}m ${59 - seconds}s`;
         }
+
+        // --- GOLDEN HOUR SYNC (Last 10m of every hour) ---
+        state.isGolden = (minutes >= 50);
+        const goldenBox = document.getElementById('golden-status');
+        if (state.isGolden) {
+            document.body.classList.add('golden');
+            goldenBox.innerHTML = "<div class='golden-alert'>✨ GOLDEN HOUR (2x SELL PRICE!) ✨</div>";
+            document.getElementById('sell-all-btn').style.background = "#d4af37";
+            document.getElementById('sell-all-btn').textContent = "💰 SELL ALL (BONUS!)";
+        } else {
+            document.body.classList.remove('golden');
+            goldenBox.innerHTML = "";
+            document.getElementById('sell-all-btn').style.background = "#ff9800";
+            document.getElementById('sell-all-btn').textContent = "Sell All Crops";
+        }
     }
 
     function renderShop() {
-        const shopEl = document.getElementById('shop-list');
-        shopEl.innerHTML = '';
-        for (let key in state.shopInventory) {
-            const stock = state.shopInventory[key];
-            const isOut = stock <= 0;
-            shopEl.innerHTML += `<div class="item-row" style="${isOut ? 'opacity:0.5' : ''}">
-                <div><strong>${cropData[key].symbol} ${key}</strong><br><small>Stock: ${isOut ? 'OUT' : stock}</small></div>
-                <button class="seed-btn" onclick="buySeed('${key}')" ${isOut ? 'disabled' : ''}>💰${cropData[key].price}</button>
+        const sEl = document.getElementById('shop-list'); sEl.innerHTML = '';
+        for (let k in state.shopInventory) {
+            const stock = state.shopInventory[k];
+            sEl.innerHTML += `<div class="item-row" style="${stock<=0?'opacity:0.5':''}">
+                <div><strong>${cropData[k].symbol} ${k}</strong><br><small>Stock: ${stock<=0?'OUT':stock}</small></div>
+                <button class="seed-btn" onclick="buySeed('${k}')" ${stock<=0?'disabled':''}>💰${cropData[k].price}</button>
             </div>`;
         }
     }
 
-    function buySeed(type) {
-        if (state.munz >= cropData[type].price && state.shopInventory[type] > 0) {
-            state.munz -= cropData[type].price;
-            state.inventory[type]++;
-            state.shopInventory[type]--;
+    function buySeed(t) {
+        if (state.munz >= cropData[t].price && state.shopInventory[t] > 0) {
+            state.munz -= cropData[t].price; state.inventory[t]++; state.shopInventory[t]--;
             renderShop(); refreshUI(); saveGame();
         }
     }
@@ -201,8 +197,7 @@
         const p = state.plots[i];
         if (p && p.progress >= 100) {
             const key = Object.keys(cropData).find(k => cropData[k].symbol === p.symbol);
-            state.barn[key]++;
-            state.plots[i] = null;
+            state.barn[key]++; state.plots[i] = null;
         } else if (!p && state.selectedSeed && state.inventory[state.selectedSeed] > 0) {
             state.inventory[state.selectedSeed]--;
             state.plots[i] = { ...cropData[state.selectedSeed], progress: 0 };
@@ -215,46 +210,49 @@
         document.getElementById('munz').textContent = Math.floor(state.munz);
         document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
         
-        const invEl = document.getElementById('inventory-list');
-        invEl.innerHTML = '';
-        for (let key in state.inventory) {
-            if (state.inventory[key] > 0) {
-                const active = state.selectedSeed === key ? 'active' : '';
-                invEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.inventory[key]}</span><button class="seed-btn ${active}" onclick="state.selectedSeed='${key}';refreshUI()">Hold</button></div>`;
-            }
+        const invEl = document.getElementById('inventory-list'); invEl.innerHTML = '';
+        for (let k in state.inventory) if (state.inventory[k] > 0) {
+            invEl.innerHTML += `<div class="item-row"><span>${cropData[k].symbol} x${state.inventory[k]}</span><button class="seed-btn ${state.selectedSeed===k?'active':''}" onclick="state.selectedSeed='${k}';refreshUI()">Hold</button></div>`;
         }
 
-        const barnEl = document.getElementById('barn-list');
-        barnEl.innerHTML = '';
-        for (let key in state.barn) {
-            if (state.barn[key] > 0) {
-                barnEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.barn[key]}</span><button class="sell-btn" onclick="sellCrop('${key}')">Sell 1</button></div>`;
-            }
+        const barnEl = document.getElementById('barn-list'); barnEl.innerHTML = '';
+        for (let k in state.barn) if (state.barn[k] > 0) {
+            const currentPrice = state.isGolden ? cropData[k].sell * 2 : cropData[k].sell;
+            barnEl.innerHTML += `<div class="item-row"><span>${cropData[k].symbol} x${state.barn[k]}</span><button class="sell-btn" onclick="sellCrop('${k}')">💰${currentPrice}</button></div>`;
         }
 
         state.plots.forEach((p, i) => {
             const el = document.getElementById(`p-${i}`);
-            if (!p) { el.textContent = ''; el.className = 'plot'; el.style.background = "#8d6e63"; } 
+            if (!p) { el.textContent = ''; el.style.background = "#8d6e63"; } 
             else {
                 if (p.progress >= 100) { el.textContent = p.symbol; el.className = 'plot ready'; el.style.background = "#4caf50"; }
-                else { 
-                    el.textContent = '🌱'; 
-                    el.className = 'plot';
-                    el.style.background = `linear-gradient(to top, #4CAF50 ${p.progress}%, #8d6e63 ${p.progress}%)`;
-                }
+                else { el.textContent = '🌱'; el.style.background = `linear-gradient(to top, #4CAF50 ${p.progress}%, #8d6e63 ${p.progress}%)`; }
             }
         });
     }
 
-    function sellCrop(type) { if (state.barn[type] > 0) { state.munz += cropData[type].sell; state.barn[type]--; refreshUI(); saveGame(); } }
-    function sellAll() { for (let key in state.barn) { state.munz += (state.barn[key] * cropData[key].sell); state.barn[key] = 0; } refreshUI(); saveGame(); }
-    function saveGame() { localStorage.setItem('sprouterClassicSave', JSON.stringify(state)); }
+    function sellCrop(t) {
+        if (state.barn[t] > 0) {
+            const price = state.isGolden ? cropData[t].sell * 2 : cropData[t].sell;
+            state.munz += price; state.barn[t]--; refreshUI(); saveGame();
+        }
+    }
+
+    function sellAll() {
+        for (let k in state.barn) {
+            const price = state.isGolden ? cropData[k].sell * 2 : cropData[k].sell;
+            state.munz += (state.barn[k] * price); state.barn[k] = 0;
+        }
+        refreshUI(); saveGame();
+    }
+
+    function saveGame() { localStorage.setItem('sprouterGoldenSave', JSON.stringify(state)); }
     function loadGame() {
-        const saved = localStorage.getItem('sprouterClassicSave');
+        const saved = localStorage.getItem('sprouterGoldenSave');
         if (saved) state = Object.assign(state, JSON.parse(saved));
     }
-    function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); alert("Exported!"); }
-    function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e) { alert("Invalid Code"); } }
+    function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); }
+    function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e) { alert("Err"); } }
 
     function init() {
         loadGame();
@@ -264,14 +262,8 @@
             grid.appendChild(el);
         }
         setInterval(() => { 
-            updateWeather(); 
-            updateGlobalShop();
-            state.plots.forEach(p => {
-                if(p && p.progress < 100) {
-                    const speed = state.isRaining ? 3 : 1;
-                    p.progress += (speed / (p.time / 1000)) * 100;
-                }
-            });
+            updateGlobalEvents();
+            state.plots.forEach(p => { if(p && p.progress < 100) p.progress += ( (state.isRaining?3:1) / (p.time/1000) ) * 100; });
             refreshUI(); 
         }, 1000);
     }
