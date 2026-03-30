@@ -122,11 +122,17 @@
 
     function restockShop() {
         state.shopInventory = {};
+        // Basil 100%
         state.shopInventory["Basil"] = getRandomInt(cropData.Basil.minS, cropData.Basil.maxS);
-        if (Math.random() < 0.90) state.shopInventory["Wheat"] = getRandomInt(cropData.Wheat.minS, cropData.Wheat.maxS);
+        // Wheat 75%
+        if (Math.random() < 0.75) state.shopInventory["Wheat"] = getRandomInt(cropData.Wheat.minS, cropData.Wheat.maxS);
+        // Carrot 80%
         if (Math.random() < 0.80) state.shopInventory["Carrot"] = getRandomInt(cropData.Carrot.minS, cropData.Carrot.maxS);
-        if (Math.random() < 0.60) state.shopInventory["Tomato"] = getRandomInt(cropData.Tomato.minS, cropData.Tomato.maxS);
+        // Tomato 40%
+        if (Math.random() < 0.40) state.shopInventory["Tomato"] = getRandomInt(cropData.Tomato.minS, cropData.Tomato.maxS);
+        // Sunflower 15%
         if (Math.random() < 0.15) state.shopInventory["Sunflower"] = getRandomInt(cropData.Sunflower.minS, cropData.Sunflower.maxS);
+        
         state.lastRestock = Date.now();
         renderShop();
         saveGame();
@@ -139,9 +145,9 @@
         document.body.removeChild(el); alert("Link copied!");
     }
 
-    function saveGame() { localStorage.setItem('sprouterMultiCropSave', JSON.stringify(state)); }
+    function saveGame() { localStorage.setItem('sprouterFinalRaritySave', JSON.stringify(state)); }
     function loadGame() {
-        const saved = localStorage.getItem('sprouterMultiCropSave');
+        const saved = localStorage.getItem('sprouterFinalRaritySave');
         if (saved) {
             state = Object.assign(state, JSON.parse(saved));
             document.getElementById('playerName').value = state.playerName;
@@ -153,7 +159,7 @@
         try { const code = document.getElementById('saveCode').value; state = JSON.parse(atob(code)); saveGame(); location.reload(); }
         catch(e) { alert("Invalid code."); }
     }
-    function resetGame() { if(confirm("Wipe progress?")) { localStorage.removeItem('sprouterMultiCropSave'); location.reload(); } }
+    function resetGame() { if(confirm("Wipe progress?")) { localStorage.removeItem('sprouterFinalRaritySave'); location.reload(); } }
 
     function buySeed(type) {
         if (state.munz >= cropData[type].price && state.shopInventory[type] > 0) {
