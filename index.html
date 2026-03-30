@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Fixed Timer</title>
+    <title>Seed Sprouter Pro - Fixed Bag & Timer</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -64,14 +64,18 @@
             Weather: <span id="weather-status">☀️ Sunny</span><br>
             <small id="weather-timer">Next change in: --:--</small>
         </div>
-        <div class="box" style="background: #f3e5f5;">
-            <h3 style="margin:0">Farmer Profile</h3>
-            <button class="seed-btn" style="width:100%; margin-top:8px; background:#2196f3; color:white; border:none;" onclick="copyLink()">Share Link</button>
-        </div>
+        
         <div class="box">
             <h3 style="margin:0">Seed Shop</h3>
             <div class="timer-text">Restock in: <span id="restock-timer">60</span>s</div>
             <div id="shop-list"></div>
+        </div>
+
+        <div class="box" style="background: #e8f5e9; border-color: #4CAF50;">
+            <h3 style="margin:0 0 10px 0">🎒 Seed Bag</h3>
+            <div id="inventory-list"></div>
+            <hr>
+            <small>Currently Holding: <strong id="selected-txt">None</strong></small>
         </div>
     </div>
 
@@ -132,11 +136,11 @@
         if (rainActive) {
             document.body.classList.add('raining');
             statusEl.innerHTML = "<span class='rain-alert'>🌧️ RAINING (3x Speed!)</span>";
-            timerEl.textContent = `Ends in: ${2 - (minutes % 10)}m ${60 - seconds}s`;
+            timerEl.textContent = `Ends in: ${2 - (minutes % 10)}m ${59 - seconds}s`;
         } else {
             document.body.classList.remove('raining');
             statusEl.textContent = "☀️ Sunny";
-            timerEl.textContent = `Rain in: ${9 - (minutes % 10)}m ${60 - seconds}s`;
+            timerEl.textContent = `Rain in: ${9 - (minutes % 10)}m ${59 - seconds}s`;
         }
     }
 
@@ -145,13 +149,11 @@
         const add = (id, chance, min, max) => {
             if (Math.random() < chance) state.shopInventory[id] = Math.floor(Math.random() * (max - min + 1)) + min;
         };
-
         add("Basil", 1.0, 5, 15);
         add("Wheat", 0.75, 5, 12);
         add("Carrot", 0.80, 5, 10);
         add("Tomato", 0.40, 3, 8);
         add("Sunflower", 0.15, 1, 3);
-
         state.lastRestockTime = Date.now();
         renderShop();
     }
@@ -206,20 +208,26 @@
         document.getElementById('munz').textContent = Math.floor(state.munz);
         document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
         
-        // Fix for restock timer
         const secondsSinceRestock = Math.floor((Date.now() - state.lastRestockTime) / 1000);
         const remaining = Math.max(0, 60 - secondsSinceRestock);
         document.getElementById('restock-timer').textContent = remaining;
         if (remaining <= 0) restockShop();
 
+        // RE-ADDED SEED BAG RENDER
         const invEl = document.getElementById('inventory-list');
         invEl.innerHTML = '';
+        let hasSeeds = false;
         for (let key in state.inventory) {
             if (state.inventory[key] > 0) {
+                hasSeeds = true;
                 const active = state.selectedSeed === key ? 'active' : '';
-                invEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.inventory[key]}</span><button class="seed-btn ${active}" onclick="state.selectedSeed='${key}';refreshUI()">Hold</button></div>`;
+                invEl.innerHTML += `<div class="item-row">
+                    <span>${cropData[key].symbol} x${state.inventory[key]}</span>
+                    <button class="seed-btn ${active}" onclick="state.selectedSeed='${key}';refreshUI()">Hold</button>
+                </div>`;
             }
         }
+        if(!hasSeeds) invEl.innerHTML = '<small style="color:#666">Bag is empty. Buy seeds!</small>';
 
         const barnEl = document.getElementById('barn-list');
         barnEl.innerHTML = '';
@@ -245,9 +253,9 @@
 
     function sellCrop(type) { if (state.barn[type] > 0) { state.munz += cropData[type].sell; state.barn[type]--; refreshUI(); saveGame(); } }
     function sellAll() { for (let key in state.barn) { state.munz += (state.barn[key] * cropData[key].sell); state.barn[key] = 0; } refreshUI(); saveGame(); }
-    function saveGame() { localStorage.setItem('sprouterFixedSave', JSON.stringify(state)); }
+    function saveGame() { localStorage.setItem('sprouterFinalSave', JSON.stringify(state)); }
     function loadGame() {
-        const saved = localStorage.getItem('sprouterFixedSave');
+        const saved = localStorage.getItem('sprouterFinalSave');
         if (saved) {
             state = Object.assign(state, JSON.parse(saved));
             renderShop();
@@ -258,7 +266,6 @@
     function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); alert("Exported!"); }
     function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e) { alert("Invalid Code"); } }
     function resetGame() { if(confirm("Wipe all progress?")) { localStorage.clear(); location.reload(); } }
-    function copyLink() { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
 
     function init() {
         loadGame();
