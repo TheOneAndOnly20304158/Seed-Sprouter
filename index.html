@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Live</title>
+    <title>Seed Sprouter Pro - Barn Edition</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,35 +28,38 @@
         .column { display: flex; flex-direction: column; gap: 15px; }
         .box { background: white; padding: 15px; border-radius: 12px; border: 2px solid #ccc; text-align: left; }
         .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 5px 0; border-bottom: 1px solid #eee; }
+        
+        /* Buttons */
         .seed-btn { background: #fff; border: 2px solid #4CAF50; border-radius: 5px; cursor: pointer; padding: 6px 10px; font-weight: bold; font-size: 13px; transition: 0.2s; }
         .seed-btn:hover:not(:disabled) { background: #e8f5e9; transform: translateY(-1px); }
         .seed-btn.active { background: #4CAF50; color: white; }
-        .seed-btn:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+        .sell-btn { background: #ff9800; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .sell-btn:hover { background: #f57c00; }
+
+        /* Garden */
         #garden { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; background: #795548; padding: 20px; border-radius: 15px; align-self: start; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); }
         .plot { background: #8d6e63; aspect-ratio: 1/1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; border: 2px solid #6d4c41; transition: 0.1s; }
         .plot.ready { background: #4caf50; animation: pulse 1.5s infinite; border-color: #2e7d32; }
+        
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .timer-text { color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; background: #ffebee; border-radius: 5px; padding: 5px; }
-        .stock-tag { font-size: 11px; color: #666; display: block; margin-top: 2px; }
         input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px; }
-        textarea { width: 100%; font-size: 10px; height: 50px; margin-top: 5px; resize: none; box-sizing: border-box; }
         .reset-btn { background: #ff5252; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;}
-        .stat-line { display: flex; justify-content: space-between; font-size: 14px; margin: 4px 0; }
     </style>
 </head>
 <body>
 
 <div id="game">
     <div class="header">
-        <h1>🌻 Seed Sprouter Pro 🌻</h1>
+        <h1>🌻 Seed Sprouter: Barn Edition 🌻</h1>
         <div class="stat-card"><strong>Munz: 💰<span id="munz">100</span></strong></div>
     </div>
 
     <div class="column">
-        <div class="box" style="background: #f3e5f5; border-color: #9c27b0;">
+        <div class="box" style="background: #f3e5f5;">
             <h3 style="margin:0">Farmer Profile</h3>
             <input type="text" id="playerName" placeholder="Enter Name..." onchange="updateName(this.value)">
-            <button class="seed-btn" style="width:100%; margin-top:8px; background:#2196f3; color:white; border:none;" onclick="copyLink()">Share Game Link</button>
+            <button class="seed-btn" style="width:100%; margin-top:8px; background:#2196f3; color:white; border:none;" onclick="copyLink()">Share Link</button>
         </div>
         <div class="box">
             <h3 style="margin:0">Seed Shop</h3>
@@ -64,36 +67,27 @@
             <div id="shop-list"></div>
         </div>
         <div class="box" style="background: #e8f5e9;">
-            <h3 style="margin:0 0 10px 0">Seed Bag</h3>
+            <h3 style="margin:0 0 10px 0">Seed Bag (To Plant)</h3>
             <div id="inventory-list"></div>
-            <hr><small>Holding: <strong id="selected-txt">None</strong></small>
+            <hr><small>Selected: <strong id="selected-txt">None</strong></small>
         </div>
     </div>
 
     <div id="garden"></div>
 
     <div class="column">
+        <div class="box" style="background: #fff3e0; border-color: #ff9800;">
+            <h3 style="margin:0 0 10px 0">🧺 The Barn (To Sell)</h3>
+            <div id="barn-list"></div>
+        </div>
+
         <div class="box">
             <h3 style="margin:0 0 10px 0">Global Chat</h3>
-            <iframe src="https://www3.cbox.ws/box/?boxid=3553708&boxtag=vUIUmT" width="100%" height="400" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>
+            <iframe src="https://www3.cbox.ws/box/?boxid=3553708&boxtag=vUIUmT" width="100%" height="300" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>
         </div>
+
         <div class="box">
-            <h3 style="margin:0 0 10px 0">Lifetime Harvests</h3>
-            <div id="stats-list">
-                <div class="stat-line">🌿 Basil: <span id="stat-Basil">0</span></div>
-                <div class="stat-line">🌾 Wheat: <span id="stat-Wheat">0</span></div>
-                <div class="stat-line">🥕 Carrot: <span id="stat-Carrot">0</span></div>
-                <div class="stat-line">🍅 Tomato: <span id="stat-Tomato">0</span></div>
-                <div class="stat-line">🌻 Sunflower: <span id="stat-Sunflower">0</span></div>
-                <hr><div class="stat-line"><strong>Total:</strong> <span id="stat-Total">0</span></div>
-            </div>
-        </div>
-        <div class="box">
-            <h3 style="margin:0 0 5px 0">Data Management</h3>
-            <textarea id="saveCode" placeholder="Save/Load code..."></textarea>
-            <button class="seed-btn" style="width:100%; margin-top:5px;" onclick="exportSave()">Export Data</button>
-            <button class="seed-btn" style="width:100%; margin-top:5px;" onclick="importSave()">Import Data</button>
-            <button class="reset-btn" onclick="resetGame()">Wipe Save</button>
+            <button class="reset-btn" onclick="resetGame()">Wipe Save Data</button>
         </div>
     </div>
 </div>
@@ -103,63 +97,31 @@
         playerName: "New Farmer",
         munz: 100, 
         selectedSeed: null,
-        inventory: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },
+        inventory: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 }, // Seeds you bought
+        barn: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },      // Harvested crops
         plots: Array(25).fill(null),
-        stats: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0, Total: 0 },
         shopInventory: {}, 
         lastRestock: Date.now()
     };
 
     const cropData = {
-        Basil:     { symbol: "🌿", price: 10,  time: 3000,  sell: 15,  minS: 5,  maxS: 25 },
-        Wheat:     { symbol: "🌾", price: 75,  time: 5000,  sell: 100, minS: 8,  maxS: 20 },
-        Carrot:    { symbol: "🥕", price: 50,  time: 8000,  sell: 75,  minS: 10, maxS: 15 },
-        Tomato:    { symbol: "🍅", price: 100, time: 10000, sell: 125, minS: 5,  maxS: 12 },
-        Sunflower: { symbol: "🌻", price: 200, time: 15000, sell: 500, minS: 1,  maxS: 5  }
+        Basil:     { symbol: "🌿", price: 10,  time: 3000,  sell: 15 },
+        Wheat:     { symbol: "🌾", price: 75,  time: 5000,  sell: 100 },
+        Carrot:    { symbol: "🥕", price: 50,  time: 8000,  sell: 75 },
+        Tomato:    { symbol: "🍅", price: 100, time: 10000, sell: 125 },
+        Sunflower: { symbol: "🌻", price: 200, time: 15000, sell: 500 }
     };
-
-    function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
     function restockShop() {
         state.shopInventory = {};
-        // Basil 100%
-        state.shopInventory["Basil"] = getRandomInt(cropData.Basil.minS, cropData.Basil.maxS);
-        // Wheat 75%
-        if (Math.random() < 0.75) state.shopInventory["Wheat"] = getRandomInt(cropData.Wheat.minS, cropData.Wheat.maxS);
-        // Carrot 80%
-        if (Math.random() < 0.80) state.shopInventory["Carrot"] = getRandomInt(cropData.Carrot.minS, cropData.Carrot.maxS);
-        // Tomato 40%
-        if (Math.random() < 0.40) state.shopInventory["Tomato"] = getRandomInt(cropData.Tomato.minS, cropData.Tomato.maxS);
-        // Sunflower 15%
-        if (Math.random() < 0.15) state.shopInventory["Sunflower"] = getRandomInt(cropData.Sunflower.minS, cropData.Sunflower.maxS);
-        
+        state.shopInventory["Basil"] = Math.floor(Math.random() * 20) + 5;
+        if (Math.random() < 0.75) state.shopInventory["Wheat"] = Math.floor(Math.random() * 15) + 5;
+        if (Math.random() < 0.80) state.shopInventory["Carrot"] = Math.floor(Math.random() * 15) + 5;
+        if (Math.random() < 0.40) state.shopInventory["Tomato"] = Math.floor(Math.random() * 10) + 5;
+        if (Math.random() < 0.15) state.shopInventory["Sunflower"] = Math.floor(Math.random() * 5) + 1;
         state.lastRestock = Date.now();
         renderShop();
-        saveGame();
     }
-
-    function updateName(val) { state.playerName = val || "New Farmer"; saveGame(); }
-    function copyLink() {
-        const el = document.createElement('textarea'); el.value = window.location.href;
-        document.body.appendChild(el); el.select(); document.execCommand('copy');
-        document.body.removeChild(el); alert("Link copied!");
-    }
-
-    function saveGame() { localStorage.setItem('sprouterFinalRaritySave', JSON.stringify(state)); }
-    function loadGame() {
-        const saved = localStorage.getItem('sprouterFinalRaritySave');
-        if (saved) {
-            state = Object.assign(state, JSON.parse(saved));
-            document.getElementById('playerName').value = state.playerName;
-        } else { restockShop(); }
-    }
-
-    function exportSave() { saveGame(); document.getElementById('saveCode').value = btoa(JSON.stringify(state)); alert("Code generated!"); }
-    function importSave() {
-        try { const code = document.getElementById('saveCode').value; state = JSON.parse(atob(code)); saveGame(); location.reload(); }
-        catch(e) { alert("Invalid code."); }
-    }
-    function resetGame() { if(confirm("Wipe progress?")) { localStorage.removeItem('sprouterFinalRaritySave'); location.reload(); } }
 
     function buySeed(type) {
         if (state.munz >= cropData[type].price && state.shopInventory[type] > 0) {
@@ -170,14 +132,12 @@
         }
     }
 
-    function selectSeed(type) { state.selectedSeed = type; refreshUI(); }
-
     function handlePlot(i) {
         const p = state.plots[i];
         if (p && p.ready) {
-            state.munz += p.sell;
+            // HARVEST LOGIC: Goes to barn, not Munz!
             const key = Object.keys(cropData).find(k => cropData[k].symbol === p.symbol);
-            state.stats[key]++; state.stats.Total++;
+            state.barn[key]++;
             state.plots[i] = null;
         } else if (!p && state.selectedSeed && state.inventory[state.selectedSeed] > 0) {
             state.inventory[state.selectedSeed]--;
@@ -187,40 +147,49 @@
         refreshUI(); saveGame();
     }
 
-    function renderShop() {
-        const shopEl = document.getElementById('shop-list');
-        shopEl.innerHTML = '';
-        for (let key in state.shopInventory) {
-            const stock = state.shopInventory[key];
-            const isOut = stock <= 0;
-            shopEl.innerHTML += `<div class="item-row" style="${isOut ? 'opacity:0.5' : ''}">
-                <div><strong>${cropData[key].symbol} ${key}</strong><span class="stock-tag">Stock: ${isOut ? 'OUT' : stock}</span></div>
-                <button class="seed-btn" onclick="buySeed('${key}')" ${isOut ? 'disabled' : ''}>💰${cropData[key].price}</button>
-            </div>`;
+    function sellCrop(type) {
+        if (state.barn[type] > 0) {
+            state.munz += cropData[type].sell;
+            state.barn[type]--;
+            refreshUI(); saveGame();
         }
     }
 
     function refreshUI() {
         document.getElementById('munz').textContent = Math.floor(state.munz);
         document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
+        
+        // Timer
         const remaining = Math.max(0, 60 - Math.floor((Date.now() - state.lastRestock) / 1000));
         document.getElementById('restock-timer').textContent = remaining;
         if (remaining <= 0) restockShop();
 
-        for (let key in state.stats) {
-            const el = document.getElementById(`stat-${key}`);
-            if(el) el.textContent = state.stats[key];
-        }
-
+        // Seed Bag
         const invEl = document.getElementById('inventory-list');
         invEl.innerHTML = '';
         for (let key in state.inventory) {
             if (state.inventory[key] > 0) {
                 const active = state.selectedSeed === key ? 'active' : '';
-                invEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.inventory[key]}</span><button class="seed-btn ${active}" onclick="selectSeed('${key}')">Hold</button></div>`;
+                invEl.innerHTML += `<div class="item-row"><span>${cropData[key].symbol} x${state.inventory[key]}</span><button class="seed-btn ${active}" onclick="state.selectedSeed='${key}';refreshUI()">Hold</button></div>`;
             }
         }
 
+        // The Barn
+        const barnEl = document.getElementById('barn-list');
+        barnEl.innerHTML = '';
+        let hasCrops = false;
+        for (let key in state.barn) {
+            if (state.barn[key] > 0) {
+                hasCrops = true;
+                barnEl.innerHTML += `<div class="item-row">
+                    <span>${cropData[key].symbol} x${state.barn[key]}</span>
+                    <button class="sell-btn" onclick="sellCrop('${key}')">Sell for 💰${cropData[key].sell}</button>
+                </div>`;
+            }
+        }
+        if(!hasCrops) barnEl.innerHTML = '<small style="color: #666;">Barn is empty. Harvest crops!</small>';
+
+        // Garden
         state.plots.forEach((p, i) => {
             const el = document.getElementById(`p-${i}`);
             if (!p) { el.textContent = ''; el.className = 'plot'; } 
@@ -231,14 +200,39 @@
         });
     }
 
+    function renderShop() {
+        const shopEl = document.getElementById('shop-list');
+        shopEl.innerHTML = '';
+        for (let key in state.shopInventory) {
+            const stock = state.shopInventory[key];
+            if (stock === undefined) continue;
+            const isOut = stock <= 0;
+            shopEl.innerHTML += `<div class="item-row" style="${isOut ? 'opacity:0.5' : ''}">
+                <div><strong>${cropData[key].symbol} ${key}</strong><br><small>Stock: ${isOut ? 'OUT' : stock}</small></div>
+                <button class="seed-btn" onclick="buySeed('${key}')" ${isOut ? 'disabled' : ''}>💰${cropData[key].price}</button>
+            </div>`;
+        }
+    }
+
+    function saveGame() { localStorage.setItem('sprouterBarnSave', JSON.stringify(state)); }
+    function loadGame() {
+        const saved = localStorage.getItem('sprouterBarnSave');
+        if (saved) state = Object.assign(state, JSON.parse(saved));
+        else restockShop();
+    }
+    function updateName(val) { state.playerName = val || "New Farmer"; saveGame(); }
+    function copyLink() { alert("Share this URL: " + window.location.href); }
+    function resetGame() { if(confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
+
     function init() {
-        loadGame(); renderShop();
+        loadGame();
         const grid = document.getElementById('garden');
         for(let i=0; i<25; i++) {
             const el = document.createElement('div'); el.className = 'plot'; el.id = `p-${i}`; el.onclick = () => handlePlot(i);
             grid.appendChild(el);
         }
-        refreshUI(); setInterval(refreshUI, 1000);
+        refreshUI(); renderShop();
+        setInterval(refreshUI, 1000);
     }
     init();
 </script>
