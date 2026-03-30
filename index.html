@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Global Market</title>
+    <title>Seed Sprouter Pro - 1m Global Sync</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -67,7 +67,7 @@
         
         <div class="box">
             <h3 style="margin:0">Global Shop</h3>
-            <div class="timer-text">Global Restock: <span id="restock-timer">--</span>s</div>
+            <div class="timer-text">Restock in: <span id="restock-timer">--</span>s</div>
             <div id="shop-list"></div>
         </div>
 
@@ -109,7 +109,7 @@
         barn: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },
         plots: Array(25).fill(null),
         shopInventory: {}, 
-        currentShopID: "", // Track unique ID of the current restock period
+        currentShopID: "", 
         isRaining: false
     };
 
@@ -121,7 +121,6 @@
         Sunflower: { symbol: "🌻", price: 200, time: 120000, sell: 500 }
     };
 
-    // Simple Deterministic Random (Seedable)
     function seededRandom(seed) {
         let x = Math.sin(seed++) * 10000;
         return x - Math.floor(x);
@@ -132,17 +131,12 @@
         const minutes = now.getMinutes();
         const seconds = now.getSeconds();
         
-        // Shop restocks every 2 minutes (deterministic)
-        const restockInterval = 2;
-        const currentPeriod = Math.floor(minutes / restockInterval);
-        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${currentPeriod}`;
+        // --- 1 MINUTE RESTOCK LOGIC ---
+        const shopID = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${minutes}`;
 
-        // If it's a new period, generate the same stock for everyone
         if (state.currentShopID !== shopID) {
             state.currentShopID = shopID;
             state.shopInventory = {};
-            
-            // Use shopID string to create a numerical seed
             let seed = 0;
             for(let i=0; i<shopID.length; i++) seed += shopID.charCodeAt(i);
 
@@ -161,7 +155,7 @@
             renderShop();
         }
 
-        const remaining = (restockInterval * 60) - ((minutes % restockInterval) * 60 + seconds);
+        const remaining = 59 - seconds;
         document.getElementById('restock-timer').textContent = remaining;
     }
 
@@ -269,9 +263,9 @@
 
     function sellCrop(type) { if (state.barn[type] > 0) { state.munz += cropData[type].sell; state.barn[type]--; refreshUI(); saveGame(); } }
     function sellAll() { for (let key in state.barn) { state.munz += (state.barn[key] * cropData[key].sell); state.barn[key] = 0; } refreshUI(); saveGame(); }
-    function saveGame() { localStorage.setItem('sprouterGlobalSave', JSON.stringify(state)); }
+    function saveGame() { localStorage.setItem('sprouter1mSave', JSON.stringify(state)); }
     function loadGame() {
-        const saved = localStorage.getItem('sprouterGlobalSave');
+        const saved = localStorage.getItem('sprouter1mSave');
         if (saved) state = Object.assign(state, JSON.parse(saved));
     }
     function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); alert("Exported!"); }
