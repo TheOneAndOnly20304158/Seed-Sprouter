@@ -52,6 +52,7 @@
         .seed-btn { background: #fff; border: 2px solid #4CAF50; border-radius: 5px; cursor: pointer; padding: 6px 10px; font-weight: bold; }
         .seed-btn.active { background: #4CAF50; color: white; }
         .sell-btn { background: #ff9800; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .wipe-btn { background: #f44336; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; width: 100%; margin-top: 5px;}
         .timer-text { color: #d32f2f; font-weight: bold; font-size: 14px; text-align: center; background: #ffebee; border-radius: 5px; padding: 5px; margin-bottom: 5px;}
         textarea { width: 100%; font-size: 10px; height: 50px; margin-top: 5px; box-sizing: border-box; }
     </style>
@@ -76,10 +77,10 @@
             <div style="font-size: 0.85em; margin-top:5px;">Lifetime: 💰<span id="lifetime-munz">0</span></div>
         </div>
 
-        <div class="box">
+        <div class="box" style="background: #e1f5fe; border-color: #03a9f4;">
             <div id="golden-status" style="font-weight:bold; color: #d84315;"></div>
             <strong>Weather:</strong> <span id="weather-status">☀️ Sunny</span><br>
-            <small id="weather-timer">Next: --:--</small>
+            <strong>Timer:</strong> <span id="weather-timer" style="color: #0277bd; font-weight: bold;">--:--</span>
         </div>
         
         <div class="box">
@@ -114,16 +115,17 @@
 
         <div class="box">
             <h3 style="margin:0 0 5px 0">Global Chat</h3>
-            <iframe src="https://www3.cbox.ws/box/?boxid=3553735&boxtag=JMxaQu" width="100%" height="450" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>
+            <iframe src="https://www3.cbox.ws/box/?boxid=3553735&boxtag=JMxaQu" width="100%" height="300" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>
         </div>
 
         <div class="box">
-            <h4 style="margin:0">Sync</h4>
+            <h4 style="margin:0">Sync & Data</h4>
             <textarea id="saveCode" placeholder="Backup code..."></textarea>
             <div style="display:flex; gap:5px;">
                 <button class="seed-btn" style="flex:1; font-size:10px;" onclick="exportSave()">Export</button>
                 <button class="seed-btn" style="flex:1; font-size:10px;" onclick="importSave()">Import</button>
             </div>
+            <button class="wipe-btn" onclick="wipeSave()">🗑️ DELETE ALL DATA</button>
         </div>
     </div>
 </div>
@@ -163,7 +165,6 @@
         else if (m > 15000) rank = "Expert Farmer";
         else if (m > 5000) rank = "Advanced Farmer";
         else if (m > 2000) rank = "Intermediate Farmer";
-        
         document.getElementById('farmer-rank').textContent = rank;
     }
 
@@ -176,8 +177,15 @@
         const isGolden = (min >= 50);
         
         document.body.className = isGolden ? 'golden' : (isRaining ? 'raining' : '');
-        document.getElementById('weather-status').textContent = isRaining ? "🌧️ Raining" : "☀️ Sunny";
-        document.getElementById('golden-status').textContent = isGolden ? "✨ GOLDEN HOUR ✨" : "";
+        document.getElementById('weather-status').textContent = isRaining ? "🌧️ Raining" : (isGolden ? "✨ Golden Hour" : "☀️ Sunny");
+        document.getElementById('golden-status').textContent = isGolden ? "2X SELL ACTIVE" : "";
+        
+        let timeRemaining;
+        if (isRaining) timeRemaining = `${2-(min%10)}m ${59-sec}s until Sun`;
+        else if (min < 50) timeRemaining = `${49-min}m ${59-sec}s until Golden`;
+        else timeRemaining = `${59-min}m ${59-sec}s until Reset`;
+        document.getElementById('weather-timer').textContent = timeRemaining;
+
         document.getElementById('restock-timer').textContent = 59 - sec;
 
         const shopID = `${now.getHours()}-${min}`;
@@ -300,6 +308,7 @@
         const s = localStorage.getItem(SAVE_KEY);
         if (s) { state = Object.assign(state, JSON.parse(s)); for(let i=0; i<state.chickens; i++) createChickenSprite(); }
     }
+    function wipeSave() { if(confirm("This will permanently delete ALL progress. Are you sure?")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
     function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); }
     function importSave() { try { state = JSON.parse(atob(document.getElementById('saveCode').value)); saveGame(); location.reload(); } catch(e) { alert("Error"); } }
 
