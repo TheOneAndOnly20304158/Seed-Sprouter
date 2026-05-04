@@ -33,6 +33,7 @@
         .nav-bar { grid-column: span 3; display: flex; gap: 15px; justify-content: center; padding: 10px; }
         .nav-btn { background: #4caf50; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: 0.2s; }
         .nav-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .nav-btn.locked { background: #9e9e9e !important; opacity: 0.7; }
 
         .column { display: flex; flex-direction: column; gap: 15px; }
         .box { background: white; padding: 15px; border-radius: 12px; border: 2px solid #ccc; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -83,8 +84,8 @@
 
     <div class="nav-bar">
         <button class="nav-btn" onclick="switchView('garden')">🏡 Garden</button>
-        <button class="nav-btn" onclick="switchView('farm')">🚜 Farm</button>
-        <button class="nav-btn" style="background:#607d8b" onclick="switchView('kitchen')">🍳 Kitchen</button>
+        <button class="nav-btn" id="btn-farm" onclick="handleUnlock('farm', 1000)">🚜 Unlock Farm (💰1k)</button>
+        <button class="nav-btn" id="btn-kitchen" style="background:#607d8b" onclick="handleUnlock('kitchen', 2500)">🍳 Unlock Kitchen (💰2.5k)</button>
     </div>
 
     <div class="column">
@@ -169,7 +170,7 @@
 </div>
 
 <script>
-    const SAVE_KEY = 'sprouter_pro_v10_final';
+    const SAVE_KEY = 'sprouter_pro_v11';
     let state = {
         munz: 100, lifetimeMunz: 0, selectedSeed: null,
         inventory: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },
@@ -177,7 +178,8 @@
         plots: Array(25).fill(null),
         chickens: 0, eggsInNest: 0, gEggsInNest: 0, lastEggTime: Date.now(),
         shopStock: {}, currentShopID: "", view: 'garden', bowl: [],
-        isInvasionActive: false
+        isInvasionActive: false,
+        unlocked: { farm: false, kitchen: false } // Progress tracking
     };
 
     const cropData = {
@@ -216,7 +218,24 @@
         document.getElementById('farmer-rank').textContent = rank;
     }
 
+    function handleUnlock(area, cost) {
+        if (state.unlocked[area]) {
+            switchView(area);
+            return;
+        }
+        if (state.munz >= cost) {
+            state.munz -= cost;
+            state.unlocked[area] = true;
+            alert(`🎉 ${area.charAt(0).toUpperCase() + area.slice(1)} Unlocked!`);
+            saveGame();
+            refreshUI();
+        } else {
+            alert(`Not enough Munz! You need 💰${cost}.`);
+        }
+    }
+
     function switchView(v) {
+        if (v !== 'garden' && !state.unlocked[v]) return;
         state.view = v;
         document.getElementById('garden-view').style.display = v === 'garden' ? 'grid' : 'none';
         document.getElementById('farm-view').style.display = v === 'farm' ? 'block' : 'none';
@@ -288,6 +307,15 @@
         document.getElementById('gegg-count').textContent = state.gEggsInNest;
         document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
         updateRank();
+
+        // Update Unlock Buttons
+        const fBtn = document.getElementById('btn-farm');
+        fBtn.innerHTML = state.unlocked.farm ? "🚜 Farm" : "🚜 Unlock Farm (💰1k)";
+        fBtn.className = state.unlocked.farm ? "nav-btn" : "nav-btn locked";
+
+        const kBtn = document.getElementById('btn-kitchen');
+        kBtn.innerHTML = state.unlocked.kitchen ? "🍳 Kitchen" : "🍳 Unlock Kitchen (💰2.5k)";
+        kBtn.className = state.unlocked.kitchen ? "nav-btn" : "nav-btn locked";
 
         const invEl = document.getElementById('inventory-list'); invEl.innerHTML = '';
         for (let k in state.inventory) if (state.inventory[k] > 0) {
@@ -448,6 +476,7 @@
         }
         setInterval(updateGlobalLogic, 1000);
         renderShop();
+        refreshUI();
     }
     init();
 </script>
