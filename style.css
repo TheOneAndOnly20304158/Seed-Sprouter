@@ -1,0 +1,67 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    background: linear-gradient(to bottom, #87CEEB, #98FB98);
+    padding: 10px;
+    min-height: 100vh;
+    margin: 0;
+    transition: background 2s;
+}
+body.raining { background: linear-gradient(to bottom, #4682B4, #708090); }
+body.golden { background: linear-gradient(to bottom, #FFD700, #FF8C00); }
+
+#game {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    gap: 15px;
+}
+.header { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 3px solid #eee; }
+.stat-card { background: #fff9c4; padding: 10px 25px; border-radius: 12px; border: 2px solid #fbc02d; font-size: 1.4em; font-weight: bold; }
+
+.nav-bar { grid-column: span 3; display: flex; gap: 15px; justify-content: center; padding: 10px; }
+.nav-btn { background: #4caf50; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: 0.2s; }
+.nav-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+.column { display: flex; flex-direction: column; gap: 15px; }
+.box { background: white; padding: 15px; border-radius: 12px; border: 2px solid #ccc; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 6px 0; border-bottom: 1px solid #eee; }
+
+#profile-box { background: #f3e5f5; border-color: #9c27b0; }
+.rank-tag { background: #9c27b0; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.9em; font-weight: bold; }
+
+#main-display { min-height: 600px; position: relative; }
+#garden-view { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; background: #795548; padding: 25px; border-radius: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+#farm-view, #kitchen-view { display: none; min-height: 500px; border-radius: 15px; position: relative; padding: 20px; }
+
+#farm-view { background: #c5e1a5; border: 5px solid #558b2f; overflow: hidden; transition: background 0.3s; }
+#farm-view.invasion-alert { background: #ffcdd2; border-color: #d32f2f; animation: flash 1s infinite; }
+@keyframes flash { 50% { border-color: #ff5252; } }
+
+#kitchen-view { background: #eceff1; border: 5px solid #607d8b; flex-direction: column; align-items: center; }
+
+.plot { background: #8d6e63; aspect-ratio: 1/1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: 2px solid #6d4c41; transition: 0.1s; position: relative; overflow: hidden; }
+.plot.ready { background: #4caf50 !important; animation: pulse 1.5s infinite; border-color: #2e7d32; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+.chicken { position: absolute; font-size: 45px; transition: all 2s ease; user-select: none; z-index: 5; }
+.wolf { position: absolute; font-size: 50px; transition: all 0.8s linear; cursor: crosshair; z-index: 10; filter: drop-shadow(0 0 5px red); user-select: none; }
+
+.floating-text { position: absolute; pointer-events: none; animation: floatUp 1s ease-out forwards; font-weight: bold; z-index: 100; font-size: 20px; }
+@keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
+
+.bowl { width: 220px; height: 140px; background: #cfd8dc; border: 10px solid #90a4ae; border-radius: 0 0 120px 120px; margin: 30px auto; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 15px; }
+.recipe-book { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; font-size: 0.9em; line-height: 1.6; }
+
+.seed-btn { background: #fff; border: 2px solid #4CAF50; border-radius: 6px; cursor: pointer; padding: 8px 12px; font-weight: bold; font-size: 0.9em; }
+.seed-btn.active { background: #4CAF50; color: white; }
+.sell-btn { background: #ff9800; border: none; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.wipe-btn { background: #f44336; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 11px; width: 100%; margin-top: 10px; font-weight: bold; }
+
+.timer-text { color: #d32f2f; font-weight: bold; font-size: 15px; text-align: center; background: #ffebee; border-radius: 6px; padding: 8px; margin-top: 5px; }
+textarea { width: 100%; font-size: 11px; height: 50px; margin-top: 8px; resize: none; }
