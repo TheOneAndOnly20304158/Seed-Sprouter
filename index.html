@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seed Sprouter Pro - Defender's Edition</title>
     <style>
         body {
@@ -170,7 +171,7 @@
 </div>
 
 <script>
-    const SAVE_KEY = 'sprouter_pro_v11';
+    const SAVE_KEY = 'sprouter_pro_v12_final';
     let state = {
         munz: 100, lifetimeMunz: 0, selectedSeed: null,
         inventory: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },
@@ -179,7 +180,7 @@
         chickens: 0, eggsInNest: 0, gEggsInNest: 0, lastEggTime: Date.now(),
         shopStock: {}, currentShopID: "", view: 'garden', bowl: [],
         isInvasionActive: false,
-        unlocked: { farm: false, kitchen: false } // Progress tracking
+        unlocked: { farm: false, kitchen: false }
     };
 
     const cropData = {
@@ -308,7 +309,6 @@
         document.getElementById('selected-txt').textContent = state.selectedSeed || "None";
         updateRank();
 
-        // Update Unlock Buttons
         const fBtn = document.getElementById('btn-farm');
         fBtn.innerHTML = state.unlocked.farm ? "🚜 Farm" : "🚜 Unlock Farm (💰1k)";
         fBtn.className = state.unlocked.farm ? "nav-btn" : "nav-btn locked";
@@ -409,8 +409,10 @@
         
         const spawnLoop = () => {
             if (!state.isInvasionActive) return;
-            if (document.querySelectorAll('.wolf').length < 3) createWolf();
-            wolfSpawner = setTimeout(spawnLoop, Math.random() * 10000 + 10000);
+            // Spawn limit increased to 10
+            if (document.querySelectorAll('.wolf').length < 10) createWolf();
+            // Wolves now spawn every 5 seconds (5000ms)
+            wolfSpawner = setTimeout(spawnLoop, 5000);
         };
         spawnLoop();
         wolfThinker = setInterval(moveWolves, 800);
