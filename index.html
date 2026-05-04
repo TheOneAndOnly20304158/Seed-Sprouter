@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Seed Sprouter Pro - Expanded Edition</title>
+    <title>Seed Sprouter Pro - Defender's Edition</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -42,18 +42,25 @@
         .rank-tag { background: #9c27b0; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.9em; font-weight: bold; }
 
         /* Main Game Views */
-        #main-display { min-height: 600px; }
+        #main-display { min-height: 600px; position: relative; }
         #garden-view { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; background: #795548; padding: 25px; border-radius: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
         #farm-view, #kitchen-view { display: none; min-height: 500px; border-radius: 15px; position: relative; padding: 20px; }
         
-        #farm-view { background: #c5e1a5; border: 5px solid #558b2f; overflow: hidden; }
+        #farm-view { background: #c5e1a5; border: 5px solid #558b2f; overflow: hidden; transition: background 0.3s; }
+        #farm-view.invasion-alert { background: #ffcdd2; border-color: #d32f2f; animation: flash 1s infinite; }
+        @keyframes flash { 50% { border-color: #ff5252; } }
+
         #kitchen-view { background: #eceff1; border: 5px solid #607d8b; flex-direction: column; align-items: center; }
 
-        .plot { background: #8d6e63; aspect-ratio: 1/1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 40px; cursor: pointer; border: 2px solid #6d4c41; transition: 0.1s; }
+        .plot { background: #8d6e63; aspect-ratio: 1/1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: 2px solid #6d4c41; transition: 0.1s; position: relative; overflow: hidden; }
         .plot.ready { background: #4caf50 !important; animation: pulse 1.5s infinite; border-color: #2e7d32; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 
         .chicken { position: absolute; font-size: 45px; transition: all 2s ease; user-select: none; z-index: 5; }
+        .wolf { position: absolute; font-size: 50px; transition: all 0.8s linear; cursor: crosshair; z-index: 10; filter: drop-shadow(0 0 5px red); user-select: none; }
+
+        .floating-text { position: absolute; pointer-events: none; animation: floatUp 1s ease-out forwards; font-weight: bold; z-index: 100; font-size: 20px; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
 
         /* Kitchen Elements */
         .bowl { width: 220px; height: 140px; background: #cfd8dc; border: 10px solid #90a4ae; border-radius: 0 0 120px 120px; margin: 30px auto; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 15px; }
@@ -113,9 +120,9 @@
         <div id="garden-view"></div>
         
         <div id="farm-view">
-            <h2 style="color:#33691e; margin-top:0;">Chicken Pasture</h2>
+            <h2 id="farm-title" style="color:#33691e; margin-top:0;">Chicken Pasture</h2>
             <div id="pasture" style="height:350px; position:relative; background: rgba(255,255,255,0.2); border-radius: 10px;"></div>
-            <div style="padding: 15px; background: white; border-radius: 10px; margin-top: 10px;">
+            <div style="padding: 15px; background: white; border-radius: 10px; margin-top: 10px; position: relative; z-index: 20;">
                 <strong>Nest:</strong> 🥚 <span id="egg-count">0</span> | ✨ <span id="gegg-count">0</span>
                 <button class="seed-btn" style="margin-left:15px;" onclick="collectEggs()">🧺 Collect Eggs</button>
             </div>
@@ -123,7 +130,7 @@
 
         <div id="kitchen-view">
             <h2 style="margin-top:0;">The Kitchen</h2>
-            <p>Add ingredients from the Barn to create high-value meals!</p>
+            <p>Combine ingredients to sell for massive profits!</p>
             <div class="bowl" id="mixing-bowl"></div>
             <div id="bowl-contents" style="font-size: 24px; min-height: 40px; margin-bottom: 15px;"></div>
             <div style="display:flex; gap:10px;">
@@ -147,11 +154,6 @@
         </div>
 
         <div class="box">
-            <h3 style="margin:0 0 5px 0">Global Chat</h3>
-            <iframe src="https://www3.cbox.ws/box/?boxid=3553735&boxtag=JMxaQu" width="100%" height="320" allowtransparency="yes" allow="autoplay" frameborder="0"></iframe>
-        </div>
-
-        <div class="box">
             <h4 style="margin:0">Sync & Backup</h4>
             <textarea id="saveCode" placeholder="Paste save code here..."></textarea>
             <div style="display:flex; gap:5px; margin-top:5px;">
@@ -164,14 +166,15 @@
 </div>
 
 <script>
-    const SAVE_KEY = 'sprouter_pro_final_v9';
+    const SAVE_KEY = 'sprouter_pro_v10_final';
     let state = {
         munz: 100, lifetimeMunz: 0, selectedSeed: null,
         inventory: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0 },
         barn: { Basil: 0, Wheat: 0, Carrot: 0, Tomato: 0, Sunflower: 0, Egg: 0, GoldEgg: 0 },
         plots: Array(25).fill(null),
         chickens: 0, eggsInNest: 0, gEggsInNest: 0, lastEggTime: Date.now(),
-        shopStock: {}, currentShopID: "", view: 'garden', bowl: []
+        shopStock: {}, currentShopID: "", view: 'garden', bowl: [],
+        isInvasionActive: false
     };
 
     const cropData = {
@@ -182,22 +185,31 @@
         Sunflower: { symbol: "🌻", price: 200, time: 120, sell: 500, chance: 0.15, max: 4 }
     };
 
+    let wolfSpawner, wolfThinker;
+
     function seededRandom(seed) {
         let x = Math.sin(seed) * 10000;
         return x - Math.floor(x);
     }
 
+    function showFloatingText(text, color, x, y) {
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.textContent = text;
+        el.style.color = color;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
     function updateRank() {
         const m = state.lifetimeMunz;
         let rank = "Newbie Farmer";
-        if (m > 10000000) rank = "Transcendental Farmer";
-        else if (m > 2000000) rank = "Mythical Farmer";
-        else if (m > 500000) rank = "Legendary Farmer";
+        if (m > 1000000) rank = "Legendary Farmer";
         else if (m > 150000) rank = "Grandmaster Farmer";
         else if (m > 50000) rank = "Master Farmer";
-        else if (m > 15000) rank = "Expert Farmer";
         else if (m > 5000) rank = "Advanced Farmer";
-        else if (m > 2000) rank = "Intermediate Farmer";
         document.getElementById('farmer-rank').textContent = rank;
     }
 
@@ -216,19 +228,24 @@
         const min = now.getMinutes();
         const sec = now.getSeconds();
 
+        // INVASION LOGIC (Every 5 mins, lasts 1 min)
+        if (min % 5 === 0 && !state.isInvasionActive) {
+            startInvasion();
+        } else if (min % 5 !== 0 && state.isInvasionActive) {
+            endInvasion();
+        }
+
+        // WEATHER LOGIC
         const isRaining = (min % 10 < 3);
         const isGolden = (min >= 50);
-        
         document.body.className = isGolden ? 'golden' : (isRaining ? 'raining' : '');
         document.getElementById('weather-status').textContent = isRaining ? "🌧️ Raining" : (isGolden ? "✨ Golden Hour" : "☀️ Sunny");
         
-        let timerTxt;
-        if (isRaining) timerTxt = `${2-(min%10)}m ${59-sec}s until Sun`;
-        else if (min < 50) timerTxt = `${49-min}m ${59-sec}s until Golden`;
-        else timerTxt = `${59-min}m ${59-sec}s until Reset`;
+        let timerTxt = isRaining ? `${2-(min%10)}m ${59-sec}s until Sun` : (min < 50 ? `${49-min}m ${59-sec}s until Golden` : `${59-min}m ${59-sec}s until Reset`);
         document.getElementById('weather-timer').textContent = timerTxt;
         document.getElementById('restock-timer').textContent = 59 - sec;
 
+        // SHOP REFRESH
         const shopID = `${now.getHours()}-${min}`;
         if (state.currentShopID !== shopID) {
             state.currentShopID = shopID;
@@ -242,13 +259,15 @@
             renderShop();
         }
 
+        // EGG PRODUCTION
         if (state.chickens > 0 && Date.now() - state.lastEggTime >= 20000) {
             for(let i=0; i<state.chickens; i++) {
-                if(Math.random() < 0.02) state.gEggsInNest++; else state.eggsInNest++;
+                if(Math.random() < 0.05) state.gEggsInNest++; else state.eggsInNest++;
             }
             state.lastEggTime = Date.now();
         }
 
+        // PLOT PROGRESS
         state.plots.forEach(p => { if (p && p.progress < 100) p.progress = Math.min(100, p.progress + ((isRaining?3:1)/p.time)*100); });
         refreshUI();
     }
@@ -280,9 +299,7 @@
         const barnEl = document.getElementById('barn-list'); barnEl.innerHTML = '';
         for (let k in state.barn) if (state.barn[k] > 0) {
             const sym = k === 'Egg' ? '🥚' : k === 'GoldEgg' ? '✨' : cropData[k].symbol;
-            let actionHtml = state.view === 'kitchen' 
-                ? `<button class="seed-btn" onclick="addToBowl('${k}')">Add</button>` 
-                : `<button class="sell-btn" onclick="sellItem('${k}')">Sell</button>`;
+            let actionHtml = state.view === 'kitchen' ? `<button class="seed-btn" onclick="addToBowl('${k}')">Add</button>` : `<button class="sell-btn" onclick="sellItem('${k}')">Sell</button>`;
             barnEl.innerHTML += `<div class="item-row"><span>${sym} x${state.barn[k]}</span>${actionHtml}</div>`;
         }
 
@@ -299,18 +316,29 @@
     }
 
     function buySeed(t) { if (state.munz >= cropData[t].price && state.shopStock[t] > 0) { state.munz -= cropData[t].price; state.inventory[t]++; state.shopStock[t]--; renderShop(); saveGame(); } }
-    function buyChicken() { if (state.munz >= 500) { state.munz -= 500; state.chickens++; createChickenSprite(); saveGame(); } }
     
-    function handlePlot(i) {
+    function buyChicken() { 
+        if (state.munz >= 500) { 
+            state.munz -= 500; 
+            state.chickens++; 
+            createChickenSprite(); 
+            saveGame(); 
+            refreshUI();
+        } 
+    }
+
+    function handlePlot(i, event) {
         const p = state.plots[i];
         if (p && p.progress >= 100) {
             const key = Object.keys(cropData).find(k => cropData[k].symbol === p.symbol);
             state.barn[key]++; state.plots[i] = null;
+            showFloatingText("+1 " + p.symbol, "#4caf50", event.clientX, event.clientY);
         } else if (!p && state.selectedSeed && state.inventory[state.selectedSeed] > 0) {
             state.inventory[state.selectedSeed]--;
-            state.plots[i] = { ...cropData[state.selectedSeed], progress: 0 };
+            state.plots[i] = { symbol: cropData[state.selectedSeed].symbol, time: cropData[state.selectedSeed].time, progress: 0 };
         }
         saveGame();
+        refreshUI();
     }
 
     function addToBowl(item) { if (state.barn[item] > 0) { state.barn[item]--; state.bowl.push(item); refreshUI(); } }
@@ -320,13 +348,13 @@
         if (state.bowl.length === 0) return;
         const counts = {};
         state.bowl.forEach(x => counts[x] = (counts[x] || 0) + 1);
-        let res = { name: "Interesting Concoction", val: 20 };
+        let res = { name: "Gooey Mess", val: 10 };
         
-        if (counts.Carrot === 3 && counts.Wheat === 3 && state.bowl.length === 6) res = { name: "Carrot Cake", val: 1200 };
-        else if (counts.Tomato === 4 && counts.Basil === 1 && state.bowl.length === 5) res = { name: "Tomato Soup", val: 900 };
-        else if (counts.Egg === 5 && counts.Basil === 2 && state.bowl.length === 7) res = { name: "Egg Salad", val: 700 };
+        if (counts.Carrot === 3 && counts.Wheat === 3) res = { name: "Carrot Cake 🎂", val: 1200 };
+        else if (counts.Tomato === 4 && counts.Basil === 1) res = { name: "Tomato Soup 🥣", val: 900 };
+        else if (counts.Egg === 5 && counts.Basil === 2) res = { name: "Egg Salad 🥗", val: 700 };
 
-        alert("Result: " + res.name + "!");
+        alert("Chef cooked: " + res.name + "!");
         state.munz += res.val; state.lifetimeMunz += res.val;
         state.bowl = []; saveGame(); refreshUI();
     }
@@ -335,23 +363,82 @@
         let val = (t==='Egg')?25:(t==='GoldEgg')?250:cropData[t].sell;
         if (new Date().getMinutes() >= 50) val *= 2;
         state.munz += val; state.lifetimeMunz += val;
-        state.barn[t]--; saveGame();
+        state.barn[t]--; saveGame(); refreshUI();
     }
 
     function sellAll() { for (let k in state.barn) { while(state.barn[k] > 0) sellItem(k); } }
-    function collectEggs() { state.barn.Egg += state.eggsInNest; state.barn.GoldEgg += state.gEggsInNest; state.eggsInNest = 0; state.gEggsInNest = 0; saveGame(); }
+    function collectEggs() { state.barn.Egg += state.eggsInNest; state.barn.GoldEgg += state.gEggsInNest; state.eggsInNest = 0; state.gEggsInNest = 0; saveGame(); refreshUI(); }
     
+    // CHICKEN SPRITES
     function createChickenSprite() {
         const c = document.createElement('div'); c.className = 'chicken'; c.innerHTML = '🐓';
         c.style.left = Math.random() * 80 + '%'; c.style.top = Math.random() * 70 + '%';
         document.getElementById('pasture').appendChild(c);
-        setInterval(() => { c.style.left = Math.random() * 80 + '%'; c.style.top = Math.random() * 70 + '%'; }, 4000);
+        setInterval(() => { if(!state.isInvasionActive) { c.style.left = Math.random() * 80 + '%'; c.style.top = Math.random() * 70 + '%'; } }, 4000);
     }
 
+    // WOLF INVASION LOGIC
+    function startInvasion() {
+        state.isInvasionActive = true;
+        document.getElementById('farm-view').classList.add('invasion-alert');
+        document.getElementById('farm-title').innerHTML = "⚠️ WOLF ATTACK! ⚠️";
+        
+        const spawnLoop = () => {
+            if (!state.isInvasionActive) return;
+            if (document.querySelectorAll('.wolf').length < 3) createWolf();
+            wolfSpawner = setTimeout(spawnLoop, Math.random() * 10000 + 10000);
+        };
+        spawnLoop();
+        wolfThinker = setInterval(moveWolves, 800);
+    }
+
+    function createWolf() {
+        const w = document.createElement('div');
+        w.className = 'wolf'; w.innerHTML = '🐺';
+        w.style.left = '-50px'; w.style.top = Math.random() * 70 + '%';
+        w.onclick = (e) => { 
+            showFloatingText("SHOO!", "orange", e.clientX, e.clientY);
+            w.remove(); 
+        };
+        document.getElementById('pasture').appendChild(w);
+    }
+
+    function moveWolves() {
+        const wolves = document.querySelectorAll('.wolf');
+        const chickens = document.querySelectorAll('.chicken');
+        wolves.forEach(wolf => {
+            if (chickens.length > 0) {
+                const target = chickens[0];
+                const tX = parseFloat(target.style.left), tY = parseFloat(target.style.top);
+                const wX = parseFloat(wolf.style.left), wY = parseFloat(wolf.style.top);
+                wolf.style.left = (wX + (tX > wX ? 4 : -4)) + '%';
+                wolf.style.top = (wY + (tY > wY ? 4 : -4)) + '%';
+                if (Math.abs(wX - tX) < 6 && Math.abs(wY - tY) < 6) {
+                    target.remove(); state.chickens--;
+                    showFloatingText("CHOMP!", "red", wolf.offsetLeft, wolf.offsetTop);
+                    saveGame();
+                }
+            } else { wolf.style.left = (parseFloat(wolf.style.left) + 5) + '%'; if(parseFloat(wolf.style.left) > 100) wolf.remove(); }
+        });
+    }
+
+    function endInvasion() {
+        state.isInvasionActive = false;
+        document.getElementById('farm-view').classList.remove('invasion-alert');
+        document.getElementById('farm-title').innerHTML = "Chicken Pasture";
+        document.querySelectorAll('.wolf').forEach(w => w.remove());
+        clearTimeout(wolfSpawner); clearInterval(wolfThinker);
+    }
+
+    // SAVE SYSTEMS
     function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
     function loadGame() {
         const s = localStorage.getItem(SAVE_KEY);
-        if (s) { state = Object.assign(state, JSON.parse(s)); for(let i=0; i<state.chickens; i++) createChickenSprite(); }
+        if (s) { 
+            state = Object.assign(state, JSON.parse(s)); 
+            document.getElementById('pasture').innerHTML = '';
+            for(let i=0; i<state.chickens; i++) createChickenSprite(); 
+        }
     }
     function wipeSave() { if(confirm("Permanently delete data?")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
     function exportSave() { document.getElementById('saveCode').value = btoa(JSON.stringify(state)); }
@@ -361,7 +448,7 @@
         loadGame();
         const grid = document.getElementById('garden-view');
         for(let i=0; i<25; i++) {
-            const el = document.createElement('div'); el.className = 'plot'; el.id = `p-${i}`; el.onclick = () => handlePlot(i);
+            const el = document.createElement('div'); el.className = 'plot'; el.id = `p-${i}`; el.onclick = (e) => handlePlot(i, e);
             grid.appendChild(el);
         }
         setInterval(updateGlobalLogic, 1000);
